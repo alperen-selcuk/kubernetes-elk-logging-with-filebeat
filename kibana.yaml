@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    node.type: kibana-node
+  name: kibana
+  namespace: logging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      node.type: kibana-node
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        node.type: kibana-node
+    spec:
+      containers:
+        - env:
+            - name: ELASTICSEARCH_HOSTS
+              value: http://es-service:9200
+            - name: ELASTICSEARCH_USERNAME
+              value: elastic
+            - name: ELASTICSEARCH_PASSWORD
+              value: E*lasti*c
+          image: docker.elastic.co/kibana/kibana:7.17.0
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:5601/api/status
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:5601/api/status
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          name: kibana
+          ports:
+            - containerPort: 5601
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    node.type: kibana-node
+  name: kibana-service
+  namespace: logging
+spec:
+  ports:
+    - name: "5601"
+      port: 5601
+      targetPort: 5601
+  selector:
+    node.type: kibana-node
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    node.type: kibana-node
+  name: kibana-ingress
+  namespace: logging
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: kibana.yourdomain.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: kibana-service
+            port:
+              number: 5601
+        path: /
+        pathType: Prefix

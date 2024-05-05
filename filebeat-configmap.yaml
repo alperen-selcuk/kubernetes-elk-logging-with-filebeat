@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: logging
+  labels:
+    k8s-app: filebeat
+data:
+  filebeat.yml: |-
+    logging.level: error
+    filebeat.inputs:
+      - type: container
+        max_bytes: 26214400
+        paths:
+          - /var/log/containers/*.log
+        processors:
+          - add_kubernetes_metadata:
+              matchers:
+              - logs_path:
+                  logs_path: "/var/log/containers/"
+    processors:
+      - decode_json_fields:
+          when:
+            has_fields: ["kubernetes.labels.run"]
+          fields: ["message"]
+          process_array: false
+          max_depth: 1
+          target: ""
+          overwrite_keys: true
+          add_error_key: true
+    output.logstash:
+      hosts: ["logstash-service:5400"]
