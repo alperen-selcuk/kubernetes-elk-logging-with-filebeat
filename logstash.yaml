@@ -37,7 +37,7 @@ data:
       {
           elasticsearch { 
               hosts => ["es-service:9200"]
-              index => "accitek-%{+YYYY.MM.dd}"
+              index => "index-%{+YYYY.MM.dd}"
               manage_template => false
               http_compression => true
             }
